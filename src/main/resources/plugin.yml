@@ -1,0 +1,5 @@
+name: MyFirstPlugin
+version: '${version}'
+main: com.example.myfirstplugin.MyFirstPlugin
+api-version: '1.20'
+description: My very first Minecraft plugin!

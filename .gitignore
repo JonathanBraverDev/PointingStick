@@ -1,0 +1,37 @@
+# Gradle
+.gradle/
+build/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+out/
+
+# Log files
+*.log
+
+# Server
+server.jar
+eula.txt
+server.properties
+start.bat
+logs/
+plugins/
+world/
+world_nether/
+world_the_end/
+banned-ips.json
+banned-players.json
+ops.json
+USERCACHE.snooper
+usercache.json
+whitelist.json
+bukkit.yml
+spigot.yml
+paper.yml
+paper-global.yml
+config/
+version_history.json
+cache/
+libraries/
