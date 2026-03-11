@@ -43,3 +43,23 @@ processResources {
         expand props
     }
 }
+
+tasks.register('deploy') {
+    dependsOn assemble
+    doLast {
+        def serverPluginsDir = file("../../server/plugins")
+        if (!serverPluginsDir.exists()) {
+            serverPluginsDir.mkdirs()
+        }
+        copy {
+            from jar.archiveFile
+            into serverPluginsDir
+            rename { String fileName ->
+                return "${rootProject.name}.jar"
+            }
+        }
+        println "Deployed ${rootProject.name}.jar to ${serverPluginsDir}"
+    }
+}
+
+assemble.finalizedBy deploy
