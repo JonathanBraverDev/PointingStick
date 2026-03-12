@@ -8,8 +8,7 @@ import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
-import org.bukkit.entity.ArmorStand;
-import org.bukkit.entity.EntityType;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -35,13 +34,18 @@ public class PingListener implements Listener {
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
+
         Action action = event.getAction();
 
         // Check if it's a left or right click
         if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK ||
             action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
 
-            ItemStack item = player.getInventory().getItemInMainHand();
+            // Support both hands — get item from whichever hand triggered the event
+            org.bukkit.inventory.EquipmentSlot hand = event.getHand();
+            ItemStack item = (hand == org.bukkit.inventory.EquipmentSlot.OFF_HAND)
+                    ? player.getInventory().getItemInOffHand()
+                    : player.getInventory().getItemInMainHand();
 
             // Check if holding the Pointing Stick
             if (item.hasItemMeta() && item.getItemMeta().hasDisplayName() &&
@@ -59,56 +63,107 @@ public class PingListener implements Listener {
                     }
                 }
 
-                // Get the block they are looking at (max distance 100 blocks)
-                Block targetBlock = player.getTargetBlockExact(100);
+                Block clickedBlock = event.getClickedBlock();
+                BlockFace clickedFace = event.getBlockFace();
 
-                if (targetBlock == null) {
+                // Only allow pinging directly clicked blocks — no air pinging
+                if (clickedBlock == null || clickedFace == null) {
                     player.sendMessage(Component.text("Target is too far away to ping!").color(NamedTextColor.RED));
                     return;
                 }
 
                 cooldowns.put(playerId, System.currentTimeMillis());
-
-                createPing(targetBlock.getLocation().add(0.5, 1.0, 0.5), player);
+                createPing(clickedBlock, clickedFace, player);
             }
         }
     }
 
-    private void createPing(Location location, Player pinger) {
-        // Spawn an invisible ArmorStand to hold the glow effect
-        ArmorStand indicator = (ArmorStand) location.getWorld().spawnEntity(location, EntityType.ARMOR_STAND);
-        indicator.setVisible(false);
-        indicator.setGravity(false);
-        indicator.setMarker(true);
-        indicator.setGlowing(true);
+    private void createPing(Block block, BlockFace face, Player pinger) {
+        Location center = block.getLocation().add(0.5, 0.5, 0.5).add(face.getDirection().multiply(0.51));
+        
+        // Play sound
+        center.getWorld().playSound(center, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
 
-        // Play sound to players nearby
-        location.getWorld().playSound(location, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+        // Initial burst
+        center.getWorld().spawnParticle(Particle.END_ROD, center, 15, 0.1, 0.1, 0.1, 0.05);
 
         // Send a message
-        for (Player p : location.getWorld().getPlayers()) {
-            if (p.getLocation().distance(location) <= 50) {
+        for (Player p : center.getWorld().getPlayers()) {
+            if (p.getLocation().distance(center) <= 50) {
                 p.sendMessage(Component.text(pinger.getName() + " pinged a location!").color(NamedTextColor.YELLOW));
             }
         }
 
-        // Create a task to spawn particles and remove the indicator after 5 seconds
+        // Periodic face highlight
         new BukkitRunnable() {
             int ticks = 0;
 
             @Override
             public void run() {
-                if (ticks >= 100) { // 5 seconds (20 ticks per second)
-                    indicator.remove();
+                if (ticks >= 100) { // 5 seconds
                     cancel();
                     return;
                 }
 
-                // Spawn some particles around the pinged location
-                location.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, location.clone().add(0, 0.5, 0), 5, 0.2, 0.2, 0.2, 0);
-
-                ticks += 5; // Run every 5 ticks (1/4 second)
+                spawnFaceEdges(block, face);
+                ticks += 10; // Every 1/2 second
             }
-        }.runTaskTimer(plugin, 0L, 5L);
+        }.runTaskTimer(plugin, 0L, 10L);
+    }
+
+    private void spawnFaceEdges(Block block, BlockFace face) {
+        Location min = block.getLocation();
+        double offset = 0.02; // Small offset to be outside the block
+        
+        // Define corners and step vectors based on face
+        Location start;
+        org.bukkit.util.Vector axis1, axis2;
+        
+        switch (face) {
+            case UP:
+                start = min.clone().add(0, 1 + offset, 0);
+                axis1 = new org.bukkit.util.Vector(1, 0, 0);
+                axis2 = new org.bukkit.util.Vector(0, 0, 1);
+                break;
+            case DOWN:
+                start = min.clone().add(0, -offset, 0);
+                axis1 = new org.bukkit.util.Vector(1, 0, 0);
+                axis2 = new org.bukkit.util.Vector(0, 0, 1);
+                break;
+            case NORTH:
+                start = min.clone().add(0, 0, -offset);
+                axis1 = new org.bukkit.util.Vector(1, 0, 0);
+                axis2 = new org.bukkit.util.Vector(0, 1, 0);
+                break;
+            case SOUTH:
+                start = min.clone().add(0, 0, 1 + offset);
+                axis1 = new org.bukkit.util.Vector(1, 0, 0);
+                axis2 = new org.bukkit.util.Vector(0, 1, 0);
+                break;
+            case EAST:
+                start = min.clone().add(1 + offset, 0, 0);
+                axis1 = new org.bukkit.util.Vector(0, 0, 1);
+                axis2 = new org.bukkit.util.Vector(0, 1, 0);
+                break;
+            case WEST:
+                start = min.clone().add(-offset, 0, 0);
+                axis1 = new org.bukkit.util.Vector(0, 0, 1);
+                axis2 = new org.bukkit.util.Vector(0, 1, 0);
+                break;
+            default:
+                return;
+        }
+
+        drawEdge(start, axis1);
+        drawEdge(start, axis2);
+        drawEdge(start.clone().add(axis1), axis2);
+        drawEdge(start.clone().add(axis2), axis1);
+    }
+
+    private void drawEdge(Location start, org.bukkit.util.Vector direction) {
+        for (double d = 0; d <= 1.0; d += 0.2) {
+            Location loc = start.clone().add(direction.clone().multiply(d));
+            loc.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, loc, 1, 0, 0, 0, 0);
+        }
     }
 }
