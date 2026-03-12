@@ -1,6 +1,7 @@
 package com.example.pointingstick.commands;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -14,35 +15,35 @@ import java.util.List;
 
 public class PointingStickCommand implements CommandExecutor {
 
-    public static final String TOOL_NAME = ChatColor.YELLOW + "Pointing Stick";
+    public static final Component TOOL_NAME = Component.text("Pointing Stick").color(NamedTextColor.YELLOW);
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(ChatColor.RED + "Only players can use this command.");
+            sender.sendMessage(Component.text("Only players can use this command.").color(NamedTextColor.RED));
             return true;
         }
 
         Player player = (Player) sender;
 
         if (!player.hasPermission("pointingstick.use")) {
-            player.sendMessage(ChatColor.RED + "You do not have permission to use the Pointing Stick.");
+            player.sendMessage(Component.text("You do not have permission to use the Pointing Stick.").color(NamedTextColor.RED));
             return true;
         }
 
         ItemStack stick = new ItemStack(Material.STICK);
         ItemMeta meta = stick.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName(TOOL_NAME);
-            List<String> lore = new ArrayList<>();
-            lore.add(ChatColor.GRAY + "Right-click or Left-click while");
-            lore.add(ChatColor.GRAY + "looking at a block to ping it!");
-            meta.setLore(lore);
+            meta.displayName(TOOL_NAME);
+            List<Component> lore = new ArrayList<>();
+            lore.add(Component.text("Right-click or Left-click while").color(NamedTextColor.GRAY));
+            lore.add(Component.text("looking at a block to ping it!").color(NamedTextColor.GRAY));
+            meta.lore(lore);
             stick.setItemMeta(meta);
         }
 
         player.getInventory().addItem(stick);
-        player.sendMessage(ChatColor.GREEN + "You have received the Pointing Stick!");
+        player.sendMessage(Component.text("You have received the Pointing Stick!").color(NamedTextColor.GREEN));
 
         return true;
     }

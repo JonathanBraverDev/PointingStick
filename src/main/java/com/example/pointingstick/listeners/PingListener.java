@@ -2,7 +2,8 @@ package com.example.pointingstick.listeners;
 
 import com.example.pointingstick.PointingStick;
 import com.example.pointingstick.commands.PointingStickCommand;
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -44,7 +45,7 @@ public class PingListener implements Listener {
 
             // Check if holding the Pointing Stick
             if (item.hasItemMeta() && item.getItemMeta().hasDisplayName() &&
-                item.getItemMeta().getDisplayName().equals(PointingStickCommand.TOOL_NAME)) {
+                item.getItemMeta().displayName().equals(PointingStickCommand.TOOL_NAME)) {
 
                 // Cancel the event so they don't break blocks or interact with things accidentally
                 event.setCancelled(true);
@@ -62,7 +63,7 @@ public class PingListener implements Listener {
                 Block targetBlock = player.getTargetBlockExact(100);
 
                 if (targetBlock == null) {
-                    player.sendMessage(ChatColor.RED + "Target is too far away to ping!");
+                    player.sendMessage(Component.text("Target is too far away to ping!").color(NamedTextColor.RED));
                     return;
                 }
 
@@ -87,7 +88,7 @@ public class PingListener implements Listener {
         // Send a message
         for (Player p : location.getWorld().getPlayers()) {
             if (p.getLocation().distance(location) <= 50) {
-                p.sendMessage(ChatColor.YELLOW + pinger.getName() + " pinged a location!");
+                p.sendMessage(Component.text(pinger.getName() + " pinged a location!").color(NamedTextColor.YELLOW));
             }
         }
 
@@ -104,7 +105,7 @@ public class PingListener implements Listener {
                 }
 
                 // Spawn some particles around the pinged location
-                location.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, location.clone().add(0, 0.5, 0), 5, 0.2, 0.2, 0.2, 0);
+                location.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, location.clone().add(0, 0.5, 0), 5, 0.2, 0.2, 0.2, 0);
 
                 ticks += 5; // Run every 5 ticks (1/4 second)
             }

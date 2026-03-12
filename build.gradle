@@ -3,7 +3,8 @@ plugins {
 }
 
 group = 'com.example'
-version = '1.0-SNAPSHOT'
+version = '1.0.0-beta.1'
 
 // Apply central infrastructure logic
+// Note: This path assumes the project is in a subfolder of the root (like /projects/)
 apply from: "../../scripts/plugin-common.gradle"
