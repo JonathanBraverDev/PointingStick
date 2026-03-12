@@ -63,17 +63,18 @@ public class PingListener implements Listener {
                     }
                 }
 
-                Block clickedBlock = event.getClickedBlock();
-                BlockFace clickedFace = event.getBlockFace();
+                // Use raycasting with a practical range (50 blocks)
+                Block targetBlock = player.getTargetBlockExact(50);
+                BlockFace targetFace = player.getTargetBlockFace(50);
 
-                // Only allow pinging directly clicked blocks — no air pinging
-                if (clickedBlock == null || clickedFace == null) {
+                // Check if a block was hit within range
+                if (targetBlock == null || targetFace == null) {
                     player.sendMessage(Component.text("Target is too far away to ping!").color(NamedTextColor.RED));
                     return;
                 }
 
                 cooldowns.put(playerId, System.currentTimeMillis());
-                createPing(clickedBlock, clickedFace, player);
+                createPing(targetBlock, targetFace, player);
             }
         }
     }
