@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'com.example'
-version = '1.0.0-beta.2'
+version = '1.0.0'
 
 // Apply central infrastructure logic
 // Note: This path assumes the project is in a subfolder of the root (like /projects/)
