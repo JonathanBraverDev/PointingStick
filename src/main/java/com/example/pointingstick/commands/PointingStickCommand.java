@@ -24,8 +24,9 @@ import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.Arrays;
 
-public class PointingStickCommand implements CommandExecutor, TabCompleter {
+import com.example.pointingstick.utils.ColorUtils;
 
+public class PointingStickCommand implements CommandExecutor, TabCompleter {
     public static final Component TOOL_NAME = Component.text("Pointing Stick").color(NamedTextColor.YELLOW);
 
     /** Returns true if the given ItemStack is a Pointing Stick. */
@@ -49,8 +50,6 @@ public class PointingStickCommand implements CommandExecutor, TabCompleter {
 
     /**
      * Finds and removes any dropped Pointing Stick owned by the given player across all loaded chunks.
-     * If the stick is in an unloaded chunk it won't be found — that case is handled gracefully
-     * by the pickup handler, which destroys it when the owner tries to pick it up while already holding one.
      */
     private static void removeDroppedStick(Player player) {
         String uuidStr = player.getUniqueId().toString();
@@ -66,7 +65,6 @@ public class PointingStickCommand implements CommandExecutor, TabCompleter {
             }
         }
     }
-
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
@@ -86,18 +84,23 @@ public class PointingStickCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 String colorName = args[1].toUpperCase();
-                NamedTextColor color = NamedTextColor.NAMES.value(colorName.toLowerCase());
-                if (color == null) {
-                    player.sendMessage(Component.text("Invalid color name!").color(NamedTextColor.RED));
+                ColorUtils.PingColor pingColor = ColorUtils.getPingColor(colorName);
+                
+                // Verify the color is one of our wool colors
+                if (!ColorUtils.getColorNames().contains(colorName)) {
+                    player.sendMessage(Component.text("Invalid color! Available: " + String.join(", ", ColorUtils.getColorNames()))
+                            .color(NamedTextColor.RED));
                     return true;
                 }
+
                 player.getPersistentDataContainer().set(PointingStick.COLOR_KEY, PersistentDataType.STRING, colorName);
                 player.sendMessage(Component.text("Your ping color has been set to ").color(NamedTextColor.GREEN)
-                        .append(Component.text(colorName).color(color)));
+                        .append(Component.text(colorName).color(pingColor.textColor)));
                 
                 updateStickInInventory(player);
                 return true;
             } else if (args[0].equalsIgnoreCase("sound")) {
+                // ... sound logic remains the same
                 if (args.length < 2) {
                     player.sendMessage(Component.text("Usage: /pointingstick sound <sound_name>").color(NamedTextColor.RED));
                     return true;
@@ -131,13 +134,12 @@ public class PointingStickCommand implements CommandExecutor, TabCompleter {
 
     private ItemStack createStick(Player player) {
         String colorName = player.getPersistentDataContainer().get(PointingStick.COLOR_KEY, PersistentDataType.STRING);
-        NamedTextColor color = (colorName != null) ? NamedTextColor.NAMES.value(colorName.toLowerCase()) : NamedTextColor.YELLOW;
-        if (color == null) color = NamedTextColor.YELLOW;
+        ColorUtils.PingColor pingColor = ColorUtils.getPingColor(colorName);
 
         ItemStack stick = new ItemStack(Material.STICK);
         ItemMeta meta = stick.getItemMeta();
         if (meta != null) {
-            meta.displayName(Component.text("Pointing Stick").color(color));
+            meta.displayName(Component.text("Pointing Stick").color(pingColor.textColor));
             List<Component> lore = new ArrayList<>();
             lore.add(Component.text("Right-click or Left-click while").color(NamedTextColor.GRAY));
             lore.add(Component.text("looking at a block to ping it!").color(NamedTextColor.GRAY));
@@ -155,12 +157,13 @@ public class PointingStickCommand implements CommandExecutor, TabCompleter {
         for (ItemStack item : player.getInventory().getContents()) {
             if (isPointingStick(item)) {
                 String colorName = player.getPersistentDataContainer().get(PointingStick.COLOR_KEY, PersistentDataType.STRING);
-                NamedTextColor color = (colorName != null) ? NamedTextColor.NAMES.value(colorName.toLowerCase()) : NamedTextColor.YELLOW;
-                if (color == null) color = NamedTextColor.YELLOW;
+                ColorUtils.PingColor pingColor = ColorUtils.getPingColor(colorName);
 
                 ItemMeta meta = item.getItemMeta();
-                meta.displayName(Component.text("Pointing Stick").color(color));
-                item.setItemMeta(meta);
+                if (meta != null) {
+                    meta.displayName(Component.text("Pointing Stick").color(pingColor.textColor));
+                    item.setItemMeta(meta);
+                }
             }
         }
     }
@@ -173,8 +176,8 @@ public class PointingStickCommand implements CommandExecutor, TabCompleter {
                     .collect(Collectors.toList());
         } else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("color")) {
-                return NamedTextColor.NAMES.keys().stream()
-                        .filter(s -> s.startsWith(args[1].toLowerCase()))
+                return ColorUtils.getColorNames().stream()
+                        .filter(s -> s.startsWith(args[1].toUpperCase()))
                         .collect(Collectors.toList());
             } else if (args[0].equalsIgnoreCase("sound")) {
                 return Arrays.stream(org.bukkit.Sound.values())

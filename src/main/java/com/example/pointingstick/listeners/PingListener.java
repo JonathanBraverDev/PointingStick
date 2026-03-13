@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.example.pointingstick.utils.ColorUtils;
+
 public class PingListener implements Listener {
 
     private final PointingStick plugin;
@@ -73,8 +75,7 @@ public class PingListener implements Listener {
         
         // Get settings
         String colorName = pinger.getPersistentDataContainer().get(PointingStick.COLOR_KEY, PersistentDataType.STRING);
-        NamedTextColor color = (colorName != null) ? NamedTextColor.NAMES.value(colorName.toLowerCase()) : NamedTextColor.YELLOW;
-        if (color == null) color = NamedTextColor.YELLOW;
+        ColorUtils.PingColor pingColor = ColorUtils.getPingColor(colorName);
 
         String soundName = pinger.getPersistentDataContainer().get(PointingStick.SOUND_KEY, PersistentDataType.STRING);
         Sound pingSound = Sound.ENTITY_EXPERIENCE_ORB_PICKUP;
@@ -84,8 +85,7 @@ public class PingListener implements Listener {
             } catch (IllegalArgumentException ignored) {}
         }
 
-        org.bukkit.Color bukkitColor = org.bukkit.Color.fromRGB(color.value());
-        Particle.DustOptions dust = new Particle.DustOptions(bukkitColor, 1.2f);
+        Particle.DustOptions dust = new Particle.DustOptions(pingColor.particleColor, 1.2f);
 
         // Play sound
         center.getWorld().playSound(center, pingSound, 1.0f, 1.0f);
@@ -94,7 +94,7 @@ public class PingListener implements Listener {
         center.getWorld().spawnParticle(Particle.DUST, center, 15, 0.1, 0.1, 0.1, 0.05, dust);
 
         // Send a message
-        Component msg = Component.text(pinger.getName() + " pinged a location!").color(color);
+        Component msg = Component.text(pinger.getName() + " pinged a location!").color(pingColor.textColor);
         for (Player p : center.getWorld().getPlayers()) {
             if (p.getLocation().distance(center) <= 50) {
                 p.sendMessage(msg);
@@ -102,7 +102,6 @@ public class PingListener implements Listener {
         }
 
         // Periodic face highlight
-        NamedTextColor finalColor = color;
         new BukkitRunnable() {
             int ticks = 0;
 
@@ -113,13 +112,13 @@ public class PingListener implements Listener {
                     return;
                 }
 
-                spawnFaceEdges(block, face, finalColor);
+                spawnFaceEdges(block, face, pingColor);
                 ticks += 10; // Every 1/2 second
             }
         }.runTaskTimer(plugin, 0L, 10L);
     }
 
-    private void spawnFaceEdges(Block block, BlockFace face, NamedTextColor color) {
+    private void spawnFaceEdges(Block block, BlockFace face, ColorUtils.PingColor pingColor) {
         Location min = block.getLocation();
         double offset = 0.02;
         
@@ -161,15 +160,14 @@ public class PingListener implements Listener {
                 return;
         }
 
-        drawEdge(start, axis1, color);
-        drawEdge(start, axis2, color);
-        drawEdge(start.clone().add(axis1), axis2, color);
-        drawEdge(start.clone().add(axis2), axis1, color);
+        drawEdge(start, axis1, pingColor);
+        drawEdge(start, axis2, pingColor);
+        drawEdge(start.clone().add(axis1), axis2, pingColor);
+        drawEdge(start.clone().add(axis2), axis1, pingColor);
     }
 
-    private void drawEdge(Location start, org.bukkit.util.Vector direction, NamedTextColor color) {
-        org.bukkit.Color bukkitColor = org.bukkit.Color.fromRGB(color.value());
-        Particle.DustOptions dust = new Particle.DustOptions(bukkitColor, 0.8f);
+    private void drawEdge(Location start, org.bukkit.util.Vector direction, ColorUtils.PingColor pingColor) {
+        Particle.DustOptions dust = new Particle.DustOptions(pingColor.particleColor, 0.8f);
 
         for (double d = 0; d <= 1.0; d += 0.2) {
             Location loc = start.clone().add(direction.clone().multiply(d));
