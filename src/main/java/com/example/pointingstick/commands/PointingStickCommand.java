@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import java.util.Arrays;
 
 import com.example.pointingstick.utils.ColorUtils;
+import com.example.pointingstick.utils.SoundUtils;
 
 public class PointingStickCommand implements CommandExecutor, TabCompleter {
     public static final Component TOOL_NAME = Component.text("Pointing Stick").color(NamedTextColor.YELLOW);
@@ -100,16 +101,14 @@ public class PointingStickCommand implements CommandExecutor, TabCompleter {
                 updateStickInInventory(player);
                 return true;
             } else if (args[0].equalsIgnoreCase("sound")) {
-                // ... sound logic remains the same
                 if (args.length < 2) {
                     player.sendMessage(Component.text("Usage: /pointingstick sound <sound_name>").color(NamedTextColor.RED));
                     return true;
                 }
                 String soundName = args[1].toUpperCase();
-                try {
-                    org.bukkit.Sound.valueOf(soundName);
-                } catch (IllegalArgumentException e) {
-                    player.sendMessage(Component.text("Invalid sound name!").color(NamedTextColor.RED));
+                if (!SoundUtils.isApproved(soundName)) {
+                    player.sendMessage(Component.text("Invalid sound! Available: " + String.join(", ", SoundUtils.getApprovedSounds()))
+                            .color(NamedTextColor.RED));
                     return true;
                 }
                 player.getPersistentDataContainer().set(PointingStick.SOUND_KEY, PersistentDataType.STRING, soundName);
@@ -180,10 +179,8 @@ public class PointingStickCommand implements CommandExecutor, TabCompleter {
                         .filter(s -> s.startsWith(args[1].toUpperCase()))
                         .collect(Collectors.toList());
             } else if (args[0].equalsIgnoreCase("sound")) {
-                return Arrays.stream(org.bukkit.Sound.values())
-                        .map(s -> s.name())
+                return SoundUtils.getApprovedSounds().stream()
                         .filter(s -> s.startsWith(args[1].toUpperCase()))
-                        .limit(20)
                         .collect(Collectors.toList());
             }
         }

@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.example.pointingstick.utils.ColorUtils;
+import com.example.pointingstick.utils.SoundUtils;
 
 public class PingListener implements Listener {
 
@@ -78,12 +79,7 @@ public class PingListener implements Listener {
         ColorUtils.PingColor pingColor = ColorUtils.getPingColor(colorName);
 
         String soundName = pinger.getPersistentDataContainer().get(PointingStick.SOUND_KEY, PersistentDataType.STRING);
-        Sound pingSound = Sound.ENTITY_EXPERIENCE_ORB_PICKUP;
-        if (soundName != null) {
-            try {
-                pingSound = Sound.valueOf(soundName);
-            } catch (IllegalArgumentException ignored) {}
-        }
+        Sound pingSound = SoundUtils.getSound(soundName);
 
         Particle.DustOptions dust = new Particle.DustOptions(pingColor.particleColor, 1.2f);
 
